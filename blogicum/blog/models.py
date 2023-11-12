@@ -1,11 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-User = get_user_model()
+from .constants import MAX_LENGTH, MAX_NAME_LENGTH, LIMIT
 
-MAX_LENGTH = 256
-MAX_NAME_LENGTH = 50
-LIMIT = 10
+User = get_user_model()
 
 
 class BaseModel(models.Model):
@@ -58,7 +56,7 @@ class Post(BaseModel):
                                               'отложенные публикации.')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
                                verbose_name='Автор публикации',
-                               related_name='posts', null=False, blank=False)
+                               related_name='posts')
     location = models.ForeignKey(Location, on_delete=models.SET_NULL,
                                  null=True, blank=True,
                                  verbose_name='Местоположение',

@@ -1,5 +1,4 @@
 from django.core.paginator import Paginator
-from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
 from django.http import Http404
@@ -10,12 +9,9 @@ from django.utils.timezone import now
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
 
+from .constants import PAGINATE_BY
 from .forms import CommentForm, PostForm, ProfileForm
-
-from .models import Category, Comment, Post
-
-PAGINATE_BY = 10
-User = get_user_model()
+from .models import Category, Comment, Post, User
 
 
 def annotate_comment_count(posts):
@@ -45,11 +41,8 @@ class PostListView(ListView):
     paginate_by = PAGINATE_BY
 
     def get_queryset(self):
-        queryset = super().get_queryset().filter(
-            is_published=True,
-            pub_date__lte=now(),
-            category__is_published=True
-        )
+        queryset = super().get_queryset()
+        queryset = filter_posts(queryset)
         queryset = annotate_comment_count(queryset)
         return queryset
 
@@ -185,7 +178,7 @@ class DeletePostView(LoginRequiredMixin, DeleteView):
 
 
 class EditProfileView(LoginRequiredMixin, UpdateView):
-    model = get_user_model()
+    model = User
     template_name = 'blog/user.html'
     form_class = ProfileForm
     slug_url_kwarg = 'name'
@@ -203,7 +196,7 @@ class EditProfileView(LoginRequiredMixin, UpdateView):
 
 
 class UserProfileView(DetailView):
-    model = get_user_model()
+    model = User
     template_name = 'blog/profile.html'
     context_object_name = 'profile'
     slug_url_kwarg = 'name'
@@ -248,7 +241,13 @@ class AddCommentView(LoginRequiredMixin, CreateView):
         return reverse('blog:post_detail', kwargs={'post_id': post_id})
 
 
-class EditCommentView(LoginRequiredMixin, UpdateView):
+class CommentSuccessUrlMixin:
+    def get_success_url(self):
+        post_id = self.kwargs['post_id']
+        return reverse('blog:post_detail', kwargs={'post_id': post_id})
+
+
+class EditCommentView(LoginRequiredMixin, CommentSuccessUrlMixin, UpdateView):
 
     model = Comment
     form_class = CommentForm
@@ -263,12 +262,9 @@ class EditCommentView(LoginRequiredMixin, UpdateView):
             return redirect('blog:post_detail', post_id=post_id)
         return super().dispatch(request, *args, **kwargs)
 
-    def get_success_url(self):
-        post_id = self.kwargs['post_id']
-        return reverse('blog:post_detail', kwargs={'post_id': post_id})
 
-
-class DeleteCommentView(LoginRequiredMixin, DeleteView):
+class DeleteCommentView(LoginRequiredMixin, CommentSuccessUrlMixin,
+                        DeleteView):
 
     model = Comment
     template_name = 'blog/comment.html'
@@ -281,7 +277,3 @@ class DeleteCommentView(LoginRequiredMixin, DeleteView):
             return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
         instance.delete()
         return redirect(self.get_success_url())
-
-    def get_success_url(self):
-        post_id = self.kwargs['post_id']
-        return reverse('blog:post_detail', kwargs={'post_id': post_id})

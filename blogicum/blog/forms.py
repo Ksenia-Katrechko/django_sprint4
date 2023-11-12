@@ -1,12 +1,8 @@
 from django import forms
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .models import Comment, Post
-
-
-FORMAT = '%Y-%m-%dT%H:%M'
-User = get_user_model()
+from .constants import FORMAT
+from .models import Comment, Post, User
 
 
 class PostForm(forms.ModelForm):
