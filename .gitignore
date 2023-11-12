@@ -151,3 +151,4 @@ media/
 sent_emails/
 
 .migrations
+.blogicum.blog.migrations
